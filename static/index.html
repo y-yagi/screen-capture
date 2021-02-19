@@ -1,0 +1,83 @@
+<html>
+  <head>
+    <meta charset="utf-8">
+    <style type="text/css">
+    .error {
+      color: red;
+    }
+
+    .warn {
+      color: orange;
+    }
+
+    .info {
+      color: darkgreen;
+    }
+    </style>
+
+    <title>Simple screen capture</title>
+  </head>
+  <body>
+    <p><button id="start">Start Capture</button></p>
+    <a id="download" href="#" download="video.mp4" hidden>Download</a>
+    <br>
+    <strong>Log:</strong>
+    <br>
+    <pre id="log"></pre>
+
+    <script>
+    const logElem = document.getElementById("log");
+    const startElem = document.getElementById("start");
+    const downloadElem = document.getElementById("download");
+
+    var displayMediaOptions = {
+      video: {
+        cursor: "always"
+      }
+    };
+    let chunks = [];
+
+    startElem.addEventListener("click", function(evt) {
+      startCapture();
+    }, false);
+
+    console.log = msg => logElem.innerHTML += `${msg}<br>`;
+    console.error = msg => logElem.innerHTML += `<span class="error">${msg}</span><br>`;
+    console.warn = msg => logElem.innerHTML += `<span class="warn">${msg}<span><br>`;
+    console.info = msg => logElem.innerHTML += `<span class="info">${msg}</span><br>`;
+
+    let onSuccess = function(stream) {
+      console.log("Record start");
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorder.start();
+      mediaRecorder.onstop = function(e) {
+        const blob = new Blob(chunks, { 'type' : 'video/mp4' });
+        chunks = [];
+        const name = prompt("File name") || "video";
+        downloadElem.href = window.URL.createObjectURL(blob);
+        downloadElem.download = name + ".mp4";
+        downloadElem.removeAttribute("hidden");
+        console.log("Record stopped. Video can be downloaded via download link.");
+      }
+
+      mediaRecorder.ondataavailable = function(e) {
+        chunks.push(e.data);
+      }
+    }
+
+    let onError = function(err) {
+      console.log('The following error occured: ' + err);
+    }
+
+    async function startCapture() {
+      logElem.innerHTML = "";
+
+      try {
+        await navigator.mediaDevices.getDisplayMedia(displayMediaOptions).then(onSuccess, onError);
+      } catch(err) {
+        console.error("Error: " + err);
+      }
+    }
+    </script>
+  </body>
+</html>
