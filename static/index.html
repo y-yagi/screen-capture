@@ -19,6 +19,7 @@
   </head>
   <body>
     <p><button id="start">Start Capture</button></p>
+    <p><input id="cropTarget" placeholder="crop target" hidden/></p>
     <a id="download" href="#" download="video.mp4" hidden>Download</a>
     <br>
     <strong>Log:</strong>
@@ -29,6 +30,11 @@
     const logElem = document.getElementById("log");
     const startElem = document.getElementById("start");
     const downloadElem = document.getElementById("download");
+    const cropTargetElem = document.getElementById("cropTarget");
+
+    if ("CropTarget" in self && "fromElement" in CropTarget) {
+      cropTargetElem.removeAttribute("hidden");
+    }
 
     var displayMediaOptions = {
       video: {
@@ -77,7 +83,14 @@
       logElem.innerHTML = "";
 
       try {
-        await navigator.mediaDevices.getDisplayMedia(displayMediaOptions).then(onSuccess, onError);
+        if (cropTargetElem.value === "") {
+          await navigator.mediaDevices.getDisplayMedia(displayMediaOptions).then(onSuccess, onError);
+        } else {
+          const cropTarget = await CropTarget.fromElement(document.querySelector(cropTargetElem.value));
+          const stream = await navigator.mediaDevices.getDisplayMedia(displayMediaOptions);
+          const [track] = stream.getVideoTracks();
+          await track.cropTo(cropTarget).then(onSuccess, onError);
+        }
       } catch(err) {
         console.error("Error: " + err);
       }
